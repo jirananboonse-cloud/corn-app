@@ -162,3 +162,157 @@
            🔥 การตั้งค่าพิเศษบังคับให้ลง A5 แผ่นเดียวเมื่อออกเป็น PDF
         ---------------------------------------------------- */
         @media print {
+            body { padding: 0; background: none; }
+            .action-bar { display: none !important; }
+            .document-page { box-shadow: none; padding: 0; }
+            
+            /* ซ่อนกรอบสีเหลี่ยมของช่องพิมพ์และไอคอนปฏิทินในไฟล์ PDF */
+            td input { 
+                border: none !important; 
+                background: transparent !important; 
+                appearance: none;
+                -webkit-appearance: none;
+            }
+            /* บีบฟอนต์และตารางเพิ่มอีกเล็กน้อย เพื่อการันตีว่าไม่หลุดหน้าแน่นอน */
+            th, td {
+                font-size: 11px !important;
+                padding: 2px 1px !important;
+            }
+            .form-title { font-size: 16px !important; }
+            .section-title { font-size: 13px !important; }
+            
+            .total-row td {
+                background-color: #fffde7 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="action-bar">
+        <button class="btn btn-save" onclick="saveData()">บันทึกข้อมูล</button>
+        <button class="btn btn-pdf" onclick="exportToPDFA5()">ดาวน์โหลดเป็น PDF (A5 - 2 คอลัมน์)</button>
+    </div>
+
+    <div class="document-page" id="pdf-content">
+        <div class="form-header">
+            <h1 class="form-title">ใบบันทึกสรุปน้ำหนักข้าวโพด</h1>
+        </div>
+
+        <div class="meta-container">
+            <div class="meta-field" style="flex: 1;">
+                <label>เลขที่สมาชิก</label>
+                <input type="text" id="member_id" placeholder="......................................................">
+            </div>
+            <div class="meta-field" style="flex: 2;">
+                <label>ชื่อ-นามสกุล</label>
+                <input type="text" id="member_name" placeholder="....................................................................................................">
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <div class="table-section">
+                <div class="section-title">ข้าวโพดตัวเล็ก</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 12%;">ลำดับ</th>
+                            <th style="width: 36%;">ว/ด/ป</th>
+                            <th style="width: 26%;">จำนวนตะกร้า</th>
+                            <th style="width: 26%;">น.น.ข้าวโพด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="small-corn-body"></tbody>
+                    <tr class="total-row">
+                        <td colspan="2" class="total-label">รวมน้ำหนัก</td>
+                        <td id="small-total-baskets">0</td>
+                        <td id="small-total-weight">0.00</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="table-section">
+                <div class="section-title">ข้าวโพดตัวใหญ่</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 12%;">ลำดับ</th>
+                            <th style="width: 34%;">ว/ด/ป</th>
+                            <th style="width: 27%;">จำนวนตะกร้า</th>
+                            <th style="width: 27%;">น.น.ข้าวโพด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="big-corn-body"></tbody>
+                    <tr class="total-row">
+                        <td colspan="2" class="total-label">รวมน้ำหนัก</td>
+                        <td id="big-total-baskets">0</td>
+                        <td id="big-total-weight">0.00</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="footer-line"></div>
+    </div>
+</div>
+
+<script>
+    function generateTableRows(tbodyId, typePrefix) {
+        const tbody = document.getElementById(tbodyId);
+        for (let i = 1; i <= 12; i++) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${i}</td>
+                <td><input type="date" class="${typePrefix}-date"></td>
+                <td><input type="number" class="${typePrefix}-basket" oninput="calculateSummaryTotals()" min="0"></td>
+                <td><input type="number" class="${typePrefix}-weight" oninput="calculateSummaryTotals()" step="0.01" min="0"></td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    function calculateSummaryTotals() {
+        let smallBaskets = 0, smallWeight = 0;
+        document.querySelectorAll('.small-basket').forEach(input => smallBaskets += Number(input.value) || 0);
+        document.querySelectorAll('.small-weight').forEach(input => smallWeight += Number(input.value) || 0);
+        document.getElementById('small-total-baskets').innerText = smallBaskets;
+        document.getElementById('small-total-weight').innerText = smallWeight.toFixed(2);
+
+        let bigBaskets = 0, bigWeight = 0;
+        document.querySelectorAll('.big-basket').forEach(input => bigBaskets += Number(input.value) || 0);
+        document.querySelectorAll('.big-weight').forEach(input => bigWeight += Number(input.value) || 0);
+        document.getElementById('big-total-baskets').innerText = bigBaskets;
+        document.getElementById('big-total-weight').innerText = bigWeight.toFixed(2);
+    }
+
+    function exportToPDFA5() {
+        const element = document.getElementById('pdf-content');
+        const memberId = document.getElementById('member_id').value.trim();
+        const fileName = memberId ? `สรุปน้ำหนัก_A5_สมาชิก_${memberId}.pdf` : 'ใบบันทึกสรุปน้ำหนักข้าวโพด_A5.pdf';
+
+        const opt = {
+            margin:       [6, 8, 6, 8], // ปรับขอบกระดาษให้สมดุล (หน่วยเป็น มม.)
+            filename:     fileName,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2.5, useCORS: true, logging: false },
+            jsPDF:        { unit: 'mm', format: 'a5', orientation: 'landscape' } // บังคับออกเป็น A5 แนวนอน
+        };
+
+        html2pdf().set(opt).from(element).save();
+    }
+
+    function saveData() {
+        alert("บันทึกข้อมูลเรียบร้อยแล้ว!");
+    }
+
+    window.onload = function() {
+        generateTableRows('small-corn-body', 'small');
+        generateTableRows('big-corn-body', 'big');
+    };
+</script>
+
+</body>
+</html>
